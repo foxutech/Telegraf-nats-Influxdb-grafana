@@ -7,9 +7,10 @@ volumes:
 networks:
   widgets:
     driver: bridge
+    name: HM
     ipam:
      config:
-       - subnet: 10.137.0.0/16
+       - subnet: 172.17.0.0/16
 
 services:
   grafana:
@@ -24,7 +25,7 @@ services:
     env_file:
       - config.monitoring
     networks:
-      - intel
+      - HM
 
   influxdb:
     image: tutum/influxdb
@@ -38,7 +39,7 @@ services:
     env_file:
       - 'env.influxdb'
     networks:
-      - intel
+      - HM
       
   nats:
     image: nats
@@ -50,7 +51,7 @@ services:
     environment:
       - 'cluster=nats://0.0.0.0:6222'
     networks:
-      - intel
+      - HM
      
   telegraf:
     image: telegraf:latest
@@ -68,7 +69,7 @@ services:
       - /proc:/rootfs/proc:ro
       - /etc:/rootfs/etc:ro
     networks:
-      - intel
+      - HM
       
   telegraf-backend:
     image: telegraf:latest
@@ -79,7 +80,7 @@ services:
     volumes:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
     networks:
-      - intel
+      - HM
 
   kapacitor:
     image: kapacitor:1.0.0-rc1
@@ -95,14 +96,14 @@ services:
     ports:
       - "9092:9092"
     networks:
-      - intel
+      - HM
 
   zookeeper:
     image: motoskia/zookeeper
     ports:
       - "2181:2181"
     networks:
-      - intel
+      - HM
       
   kafka:
     image: motoskia/kafka
@@ -115,4 +116,4 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - intel
+      - HM
