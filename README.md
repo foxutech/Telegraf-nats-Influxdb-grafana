@@ -27,7 +27,7 @@ $ docker logs Container-name/container-ID
 
 To check NATS server monitoring interface, use
 
-$ curl http://10.75.29.228:8222/connz?subs=1 
+$ curl http://NATS_SERVER_IP:8222/connz?subs=1 
 
 (Change you host/container IP)
 
