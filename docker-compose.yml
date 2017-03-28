@@ -1,0 +1,118 @@
+version: '2'
+
+volumes:
+    grafana_data: {}
+    influxdb_data: {}
+
+networks:
+  widgets:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.137.0.0/16
+
+services:
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    depends_on:
+      - influxdb
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+    env_file:
+      - config.monitoring
+    networks:
+      - intel
+
+  influxdb:
+    image: tutum/influxdb
+    container_name: influxdb
+    ports:
+      - "8083:8083"
+      - "8086:8086"
+      - "8090:8090"
+    volumes:
+      - influxdb_data:/data/influxdb
+    env_file:
+      - 'env.influxdb'
+    networks:
+      - intel
+      
+  nats:
+    image: nats
+    container_name: nats
+    ports:
+      - "4222:4222"
+      - "6222:6222"
+      - "8222:8222"
+    environment:
+      - 'cluster=nats://0.0.0.0:6222'
+    networks:
+      - intel
+     
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    links:
+      - influxdb
+    environment:
+      - HOST_ETC=/rootfs/etc
+      - HOST_SYS=/rootfs/sys
+      - HOST_PROC=/rootfs/proc
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro 
+      - /sys:/rootfs/sys:ro
+      - /proc:/rootfs/proc:ro
+      - /etc:/rootfs/etc:ro
+    networks:
+      - intel
+      
+  telegraf-backend:
+    image: telegraf:latest
+    container_name: telegraf-backend
+    links:
+      - influxdb
+      - nats
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    networks:
+      - intel
+
+  kapacitor:
+    image: kapacitor:1.0.0-rc1
+    container_name: kapacitor
+    environment:
+      KAPACITOR_HOSTNAME: kapacitor
+      KAPACITOR_INFLUXDB_0_URLS_0: http://influxdb:8086
+    volumes:
+      - ./data/kapacitor:/var/lib/kapacitor
+      - ./kapacitor.conf:/etc/kapacitor/kapacitor.conf:ro
+    links:
+      - influxdb
+    ports:
+      - "9092:9092"
+    networks:
+      - intel
+
+  zookeeper:
+    image: motoskia/zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - intel
+      
+  kafka:
+    image: motoskia/kafka
+    container_name: kafka
+    ports:
+      - "0.0.0.0:9091:9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: <<Hostname>>
+      KAFKA_ZOOKEEPER_CONNECT: <<zookeeper-ip>>:2181
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - intel
