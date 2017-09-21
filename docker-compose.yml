@@ -24,6 +24,14 @@ services:
       - grafana_data:/var/lib/grafana
     env_file:
       - config.monitoring
+    environment:
+      - HTTP_USER=admin
+      - HTTP_PASS=admin
+      - INFLUXDB_HOST=influxsrv
+      - INFLUXDB_PORT=8086
+      - INFLUXDB_NAME={{DB name}}
+      - INFLUXDB_USER=root
+      - INFLUXDB_PASS=root
     networks:
       - HM
 
